@@ -2,10 +2,12 @@ import pickle
 import os
 import networkx as nx
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import tkinter as tk
 from tkinter import filedialog
+
 
 class PklVisualizer:
     # def __init__(self, file_path):
@@ -51,6 +53,9 @@ class PklVisualizer:
             print(f"Type: NetworkX Graph | Nodes: {len(self.data)} | Edges: {len(self.data.edges())}")
         elif isinstance(self.data, dict):
             print(f"Type: Dictionary | Keys: {list(self.data.keys())}")
+            # CASE 3: It's a Pandas DataFrame
+        elif isinstance(self.data, pd.DataFrame):
+            self._display_dataframe()
         else:
             print(f"Type: {type(self.data)}")
 
@@ -91,6 +96,13 @@ class PklVisualizer:
         corr = np.corrcoef(self.data[key].T)
         sns.heatmap(corr, cmap='coolwarm', center=0)
         plt.title(f"Feature Correlation: {key}")
+
+    def _display_dataframe(self):
+        print(f"--- Detected Pandas DataFrame ---")
+        print(self.data.head())
+        plt.figure()
+        self.data.iloc[:100, :10].plot(kind='line')  # Plot first 10 columns
+        plt.title("DataFrame Overview")
 
     # --- AUTOMATIC ROUTER ---
     def auto_visualize(self):
