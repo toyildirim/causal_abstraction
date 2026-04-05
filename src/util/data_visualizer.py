@@ -1,19 +1,21 @@
-import pickle
 import os
-import networkx as nx
-import numpy as np
-import matplotlib
-import pandas as pd
-import pydot
+import pickle
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+import matplotlib
+import networkx as nx
+import numpy as np
+import pandas as pd
+import pydot
 from numpy.ma.core import size
 
-from rdaConverter import RdaConverter as rda
-from file_utils import FileUtil as fu
 from abstraction_methods.cagres.cagres import CaGreS as cg
-from abstraction_methods.reducedag.reduceDag import DAGReducer as dr
+from abstraction_methods.reducedag.reduce_dag import DAGReducer as dr
+from abstraction_methods.transitcluster.transit_cluster import TransitCluster as tc
+from file_utils import FileUtil as fu
+from rda_converter import RdaConverter as rda
+from util.graph_utils import GraphUtils
 
 # Set the backend for Linux/PyCharm compatibility
 matplotlib.use('TkAgg')
@@ -190,12 +192,12 @@ class DataVisualizer:
     def _launch_graph_windows(graph_obj, title):
         """Standardizes dual-view (Matplotlib + Pyvis) for DAGs."""
         # --- DESKTOP VIEW ---
-        plt.figure(title, figsize=(10, 7))
-        pos = nx.spring_layout(graph_obj, seed=42)
-        nx.draw(graph_obj, pos, with_labels=True, node_color='skyblue',
-                node_size=1500, arrowsize=20, font_weight='bold')
-        plt.title(title)
-        plt.show(block=False)
+        # plt.figure(title, figsize=(10, 7))
+        # pos = nx.spring_layout(graph_obj, seed=42)
+        # nx.draw(graph_obj, pos, with_labels=True, node_color='skyblue',
+        #         node_size=1500, arrowsize=20, font_weight='bold')
+        # plt.title(title)
+        # plt.show(block=False)
 
         # --- BROWSER VIEW (Pyvis) ---
         net = Network(height='750px', width='100%', notebook=False, directed=True)
@@ -225,30 +227,34 @@ class LauncherApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Thesis Data Visualizer")
+        self.root.title("Thesis Data Visualfrom_r_formulaizer")
         self.root.geometry("600x400")
         self.current_dag = None  # This is your "storage" for the selected DAG
-
+        self.nodes = None  # To store master nodes if needed for abstraction methods
         tk.Label(root, text="Data Visualizer", font=("Arial", 14, "bold")).pack(pady=20)
 
         self.btn_browse = tk.Button(root, text="Choose Data File", command=self.load_and_visualize,
                                     width=20, height=2, bg="#4CAF50", fg="white")
         self.btn_browse.pack(pady=10)
 
-        self.btn_abstract = tk.Button(root, text="Abstract_CAGRES", command=self.abstract_cagres,
+        self.btn_abstract_cagres = tk.Button(root, text="Abstract_CAGRES", command=self.abstract_cagres,
                                     width=20, height=2, bg="#4CAF50", fg="white")
-        self.btn_abstract.pack(pady=10)
+        self.btn_abstract_cagres.pack(pady=10)
 
-        self.btn_abstract = tk.Button(root, text="Abstract_REDUCEDAG", command=self.abstract_reducedag,
+        self.btn_abstract_reducedag = tk.Button(root, text="Abstract_REDUCEDAG", command=self.abstract_reducedag,
                                       width=20, height=2, bg="#4CAF50", fg="white")
-        self.btn_abstract.pack(pady=10)
+        self.btn_abstract_reducedag.pack(pady=10)
+
+        self.btn_abstract_transitcluster = tk.Button(root, text="Abstract_TRANSITCLUSTER", command=self.abstract_transitcluster,
+                                      width=20, height=2, bg="#4CAF50", fg="white")
+        self.btn_abstract_transitcluster.pack(pady=10)
 
         self.status = tk.Label(root, text="Waiting for file...", fg="gray")
         self.status.pack(side="bottom", pady=10)
 
     def load_and_visualize(self):
         file_path = filedialog.askopenfilename(
-            filetypes=[("Supported", "*.pkl *.dot *.rda *.cg"), ("All files", "*.*")]
+            filetypes=[("Supported", "*.pkl *.dot *.rda *.cg *.graphml"), ("All files", "*.*")]
         )
         if not file_path: return
 
@@ -276,15 +282,18 @@ class LauncherApp:
                         data = pickle.load(f)
             # ...
             elif ext == '.dot':
-                data = self._parse_dot(file_path)
+                data = GraphUtils.load_from_dot(file_path)
+            elif ext == '.graphml':
+                data = GraphUtils.load_from_graphml(file_path)
             elif ext == '.rda':
                 data = rda.convert_to_dict(file_path)  #
                 # Use FileUtil for organized backup naming
                 fu.save_as_pkl(data, file_path, DATA_PATH)
                 # New logic for .cg text files
             elif ext == '.cg':
-                 data = self._parse_cg(file_path)
+                 data = GraphUtils.load_from_cg(file_path)
             self.current_dag = data
+            self.nodes= data.nodes() if isinstance(data, (nx.Graph, nx.DiGraph)) else None
 
             self.status.config(text=f"Loaded: {os.path.basename(file_path)}", fg="green")
             DataVisualizer.plot_data(data, file_path)
@@ -312,28 +321,7 @@ class LauncherApp:
             print(f"Error reading or parsing .dot file: {e}")
         return None
 
-    def _parse_cg(self, file_path):
-        G = nx.DiGraph()
-        with open(file_path, 'r') as f:
-            lines = f.readlines()
 
-        is_edge_section = False
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith('<NODES>'):
-                continue
-            if line.startswith('<EDGES>'):
-                is_edge_section = True
-                continue
-
-            if is_edge_section:
-                # Parses "Z -> X" into ('Z', 'X')
-                parent, child = [n.strip() for n in line.split('->')]
-                G.add_edge(parent, child)
-            else:
-                # Adds nodes before edges are defined
-                G.add_node(line)
-        return G
 
     def abstract_cagres(self):
         import traceback
@@ -346,7 +334,6 @@ class LauncherApp:
             abstract_path = DATA_PATH = '/home/taylanozgur/BackUp/taylanozgur/METU/CogS/Thesis/MyProjects/DataVisualizer/data/' + '/cagres/abstracted'
             DataVisualizer.plot_data(abstracted_dag, abstract_path)
             # self.display_comparison(self.current_dag, abstracted_dag)
-
         except Exception as e:
             # This will print the FULL error path to your console
             print("\n--- DEBUG ERROR ---")
@@ -354,6 +341,7 @@ class LauncherApp:
 
             # This will show a popup so you know exactly what failed
             messagebox.showerror("Abstraction Error", f"Failed to run CaGreS:\n{e}")
+
     def abstract_reducedag(self):
         import traceback
         try:
@@ -374,7 +362,58 @@ class LauncherApp:
             traceback.print_exc()
 
             # This will show a popup so you know exactly what failed
-            messagebox.showerror("Abstraction Error", f"Failed to run CaGreS:\n{e}")
+            messagebox.showerror("Abstraction Error", f"Failed to run ReduceDAG:\n{e}")
+
+    def abstract_transitcluster(self):
+        import traceback
+        try:
+            # Check if the "storage" is empty
+            if self.current_dag is None:
+                messagebox.showwarning("Logic Error", "No DAG loaded! Please load a file first.")
+                return
+            if isinstance(self.current_dag, dict):
+                self.current_dag = next(iter(self.current_dag.values()))
+
+            # Assuming tc_engine is an instance of TransitCluster and G is your networkx DAG
+            tc_engine = tc(self.current_dag)
+            # 1. Find the clusters (Algorithm 1)
+            t_components = tc_engine.find_transit_components(singletons=False)
+            t_clusters = tc_engine.find_transit_clusters(self.current_dag,t_components, self.nodes)
+            # 2. Iterate and abstract
+            # for cluster in t_clusters:
+            #     print(f"Processing Transit Cluster: {cluster['vertices']}")
+            #     # Generate the abstracted/contracted graph
+            #     abstracted_dag = tc_engine.grouped_graph(grouping=cluster)
+            #     abstract_path = DATA_PATH  + '/transitcluster/abstracted'
+            #     DataVisualizer.plot_data(abstracted_dag, abstract_path)
+            #     # self.display_comparison(self.current_dag, abstracted_dag)
+
+           # 3. THE LOOP: (Matches R: for (tc in tcluster))
+           # 'i' increments automatically (0, 1, 2...).
+            for i, cluster in enumerate(t_clusters):
+                # --- THE 'R-PARITY' ORDERING STEP ---
+                # We filter using 'self.nodes' (The Master Ruler).
+                # This guarantees U_1 is first and Y_1 is last, matching your R image.
+                cluster['vertices'] = [n for n in self.nodes if n in cluster['vertices']]
+
+                print(f"Iteration {i + 1}: Processing Cluster {cluster['vertices']}")
+
+                # 4. ABSTRACTION: (Matches R: g_abstract <- grouped_graph(tc))
+                # This merges the 13 nodes into that single 'Blue Bubble' (Macro-Node).
+                abstracted_dag = tc_engine.grouped_graph(cluster,self.current_dag)
+
+                # 5. PLOT: (Matches R: plot(g_abstract))
+                # Use i + 1 directly in the path to avoid overwriting files.
+                abstract_path = f"{DATA_PATH}/transitcluster/abstracted_cluster_{i + 1}"
+                DataVisualizer.plot_data(abstracted_dag, abstract_path)
+        except Exception as e:
+            # This will print the FULL error path to your console
+            print("\n--- DEBUG ERROR ---")
+            traceback.print_exc()
+
+            # This will show a popup so you know exactly what failed
+            messagebox.showerror("Abstraction Error", f"Failed to run Transit Cluster:\n{e}")
+
     def display_comparison(self, original_dag, abstracted_dag):
         # Create a figure with 1 row and 2 columns
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
@@ -389,7 +428,7 @@ class LauncherApp:
         pos2 = nx.spring_layout(abstracted_dag, seed=42)
         nx.draw(abstracted_dag, pos2, ax=ax2, with_labels=True,
                 node_color='lightgreen', node_size=800, arrowsize=20)
-        ax2.set_title("Abstracted Model (CaGreS)")
+        ax2.set_title("Abstracted Model")
 
         plt.tight_layout()
         plt.show()

@@ -1,20 +1,19 @@
-from dowhy import CausalModel
-import causallearn.utils.GraphUtils as GU
-from causallearn.search.ConstraintBased import PC
-import math
-import networkx as nx
-import random
-import pandas as pd
 import itertools
-import sys
+import math
 import os
+import random
+import sys
 
-# This adds the folder containing cagres.py and Utils.py to the search list
+import networkx as nx
+import pandas as pd
+from causallearn.search.ConstraintBased import PC
+
+# This adds the folder containing cagres.py and dag_utils.py to the search list
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-import Utils
+
 # from utils import graph_utils
 
 

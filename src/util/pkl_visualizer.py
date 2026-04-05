@@ -1,12 +1,13 @@
-import pickle
 import os
+import pickle
+import tkinter as tk
+from tkinter import filedialog
+
+import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-import tkinter as tk
-from tkinter import filedialog
 
 
 class PklVisualizer:
