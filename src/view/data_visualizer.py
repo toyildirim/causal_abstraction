@@ -25,7 +25,7 @@ from pyvis.network import Network
 import webbrowser
 
 # Constants
-DATA_PATH = '/home/taylanozgur/BackUp/taylanozgur/METU/CogS/Thesis/MyProjects/DataVisualizer/data/'
+DATA_PATH = '/data/'
 HTML_DIR = os.path.join(DATA_PATH, "html")
 
 class DataVisualizer:

@@ -222,3 +222,12 @@ class GraphUtils:
         print(f"Nodes: {G.number_of_nodes()}")
         print(f"Edges: {G.number_of_edges()}")
         print(f"Is Directed Acyclic Graph: {is_dag}")
+
+    @staticmethod
+    def to_digraph_string(G: nx.DiGraph) -> str:
+        edges_str_list = []
+        for u, v in G.edges():
+            edges_str_list.append(f"{u} -> {v}")
+
+        edges_str = "; ".join(edges_str_list)
+        return f"digraph {{{edges_str};}}"

@@ -7,6 +7,9 @@ import sys
 import networkx as nx
 import pandas as pd
 from causallearn.search.ConstraintBased import PC
+import cagres_utils as Utils
+from dowhy import CausalModel
+from util import graph_utils
 
 # This adds the folder containing cagres.py and dag_utils.py to the search list
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -223,51 +226,51 @@ def get_cost(node1, node2, G):
     return cost
 
 
-# def estimate_binary_treatment_effect(df, treatment_column, logic_condition, outcome_column, graph: nx.DiGraph):
-#     if not nx.has_path(graph, treatment_column, outcome_column):
-#         return -1, -1
-#     # 1) Load the DataFrame and convert columns to PascalCase if needed
-#     df = Utils.convert_df_columns_snake_to_pascal_inplace(df)
-#
-#     # 2) Back up the original values from the treatment column
-#     original_values = df[treatment_column].copy()
-#
-#     # 3) Overwrite the column in-place with 0 or 1, according to logic_condition
-#     #    - Replace 'treatment_column' in the condition with the actual column name
-#     #    - Translate "AND" -> "&", "OR" -> "|" for pandas.eval, etc.
-#     parsed_condition = (
-#         logic_condition
-#         .replace("AND", "&")
-#         .replace("OR", "|")
-#     )
-#
-#     # Evaluate the condition, set matching rows to 1
-#     matching_rows = df.eval(parsed_condition)
-#     df[treatment_column] = 0
-#     df.loc[matching_rows, treatment_column] = 1
-#
-#     # 4) Build a DoWhy causal model using the altered treatment column
-#     graph_str = graph_utils.to_digraph_string(graph)
-#     model = CausalModel(
-#         data=df,
-#         treatment=treatment_column,
-#         outcome=outcome_column,
-#         graph=graph_str
-#     )
-#
-#     # 5) Identify the effect
-#     identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
-#
-#     # 6) Estimate effect with a simple backdoor method (e.g. linear regression)
-#     causal_estimate_reg = model.estimate_effect(
-#         identified_estimand,
-#         method_name="backdoor.linear_regression",
-#         test_significance=True,
-#     )
-#
-#     # 7) Restore the original column values
-#     df[treatment_column] = original_values
-#     return causal_estimate_reg, causal_estimate_reg.test_stat_significance()['p_value']
+def estimate_binary_treatment_effect(df, treatment_column, logic_condition, outcome_column, graph: nx.DiGraph):
+    if not nx.has_path(graph, treatment_column, outcome_column):
+        return -1, -1
+    # 1) Load the DataFrame and convert columns to PascalCase if needed
+    df = Utils.convert_df_columns_snake_to_pascal_inplace(df)
+
+    # 2) Back up the original values from the treatment column
+    original_values = df[treatment_column].copy()
+
+    # 3) Overwrite the column in-place with 0 or 1, according to logic_condition
+    #    - Replace 'treatment_column' in the condition with the actual column name
+    #    - Translate "AND" -> "&", "OR" -> "|" for pandas.eval, etc.
+    parsed_condition = (
+        logic_condition
+        .replace("AND", "&")
+        .replace("OR", "|")
+    )
+
+    # Evaluate the condition, set matching rows to 1
+    matching_rows = df.eval(parsed_condition)
+    df[treatment_column] = 0
+    df.loc[matching_rows, treatment_column] = 1
+
+    # 4) Build a DoWhy causal model using the altered treatment column
+    graph_str = graph_utils.to_digraph_string(graph)
+    model = CausalModel(
+        data=df,
+        treatment=treatment_column,
+        outcome=outcome_column,
+        graph=graph_str
+    )
+
+    # 5) Identify the effect
+    identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
+
+    # 6) Estimate effect with a simple backdoor method (e.g. linear regression)
+    causal_estimate_reg = model.estimate_effect(
+        identified_estimand,
+        method_name="backdoor.linear_regression",
+        test_significance=True,
+    )
+
+    # 7) Restore the original column values
+    df[treatment_column] = original_values
+    return causal_estimate_reg, causal_estimate_reg.test_stat_significance()['p_value']
 
 
 def get_grounded_dag(summary_dag):
