@@ -14,9 +14,10 @@ def g_formula(g):
     # 1. Identify Exposure (A) and Outcome (Y)
     # Based on your previous context, we'll assume they are stored in graph attributes
     # or you can pass them as arguments.
-    A = [n for n, d in g.nodes(data=True) if 'exposure' in d]
-    Y = [n for n, d in g.nodes(data=True) if 'outcome' in d]
-
+    # A = [n for n, d in g.nodes(data=True) if 'exposure' in d]
+    A = [n for n, d in g.nodes(data=True) if n == 'exposure' or d.get("label") == 'exposure' or d.get("role") == 'exposure']
+    # Y = [n for n, d in g.nodes(data=True) if 'outcome' in d]
+    Y = [n for n, d in g.nodes(data=True) if n == 'outcome' or d.get("label") == 'outcome' or d.get("role") == 'outcome']
     if not A or not Y:
         # Fallback if labels aren't set: assume specific names or prompt user
         raise ValueError("Graph must have nodes labeled 'exposure' and 'outcome'")

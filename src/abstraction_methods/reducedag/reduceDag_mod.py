@@ -2,7 +2,9 @@ import networkx as nx
 
 
 class DAGReducer:
-    def __init__(self, G, exposure="A", outcome="Y"):
+    # def __init__(self, G, exposure=A, outcome=Y):
+    def __init__(self, G, exposure=None, outcome=None):
+
         self.original_G = G.copy()
         self.G = G.copy()
         self.exposure = exposure

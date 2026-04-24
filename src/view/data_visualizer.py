@@ -13,10 +13,10 @@ from numpy.ma.core import size
 from abstraction_methods.cagres.cagres import CaGreS as cg
 from abstraction_methods.reducedag.reduce_dag import DAGReducer as dr
 from abstraction_methods.transitcluster.transit_cluster import TransitCluster as tc
-from file_utils import FileUtil as fu
-from rda_converter import RdaConverter as rda
+from util.file_utils import FileUtil as fu
+from util.rda_converter import RdaConverter as rda
 from util.graph_utils import GraphUtils
-
+from abstraction_methods.repare import repare_known_dag_model as repare_dag
 # Set the backend for Linux/PyCharm compatibility
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ from pyvis.network import Network
 import webbrowser
 
 # Constants
-DATA_PATH = '/data/'
+DATA_PATH = '/home/taylanozgur/BackUp/taylanozgur/METU/CogS/Thesis/MyProjects/DataVisualizer/data/'
 HTML_DIR = os.path.join(DATA_PATH, "html")
 
 class DataVisualizer:
@@ -40,8 +40,7 @@ class DataVisualizer:
         if isinstance(data, (nx.Graph, nx.DiGraph)):
             DataVisualizer._launch_graph_windows(data, base_name)
 
-        # 2. Dictionaries (RDA outpu
-        # t or sensor groups)
+        # 2. Dictionaries (RDA output or sensor groups)
         elif isinstance(data, dict):
             # Detect if it is a spatial collection
             if all(k in data for k in ['coordinates', 'observations']):
@@ -202,16 +201,38 @@ class DataVisualizer:
         # --- BROWSER VIEW (Pyvis) ---
         net = Network(height='750px', width='100%', notebook=False, directed=True)
 
+        # Helper function to convert node to string ID
+        def get_node_id(node):
+            """Convert a node (tuple, frozenset, etc.) to a unique string ID."""
+            if isinstance(node, (set, frozenset)):
+                return "|".join(map(str, sorted(node)))
+            else:
+                return str(node)
         # Color coding for Causal Roles
         for node, attr in graph_obj.nodes(data=True):
-            color = 'red' if 'exposure' in str(attr) else 'green' if 'outcome' in str(attr) else 'skyblue'
-            label = f"{'EXPOSURE' if color == 'red' else 'OUTCOME' if color == 'green' else ''}: {node}"
-            net.add_node(node, label=label, color=color)
+            # Color coding for Causal Roles
+            # 1. Convert the frozenset/node to a unique string ID
+            # This formats frozenset({1, 2}) into "1|2" for a cleaner look
+            # node_id = "|".join(map(str, sorted(node))) if isinstance(node, (set, frozenset)) else str(node)
+            node_id = get_node_id(node)
+            is_exposure = 'exposure' in str(attr) or node_id == 'exposure' or node =='exposure'
+            is_outcome =  'outcome' in str(attr)  or node_id == 'outcome' or node == 'outcome'
+            if is_outcome:
+                color = 'red'
+            elif is_exposure:
+                color = 'green'
+            else:
+                color = 'skyblue'
+
+            label = f"{'EXPOSURE' if is_exposure else 'OUTCOME' if is_outcome else ''}: {node}"
+            net.add_node(node_id, label=label, color=color)
 
         for u, v in graph_obj.edges():
-            net.add_edge(u, v)
-
-        net.toggle_physics(True)  #
+            # net.add_edge(u, v)
+            u_id = get_node_id(u)
+            v_id = get_node_id(v)
+            net.add_edge(u_id, v_id)
+        net.toggle_physics(True)  
 
         # Ensure HTML directory exists
         os.makedirs(HTML_DIR, exist_ok=True)
@@ -248,6 +269,11 @@ class LauncherApp:
         self.btn_abstract_transitcluster = tk.Button(root, text="Abstract_TRANSITCLUSTER", command=self.abstract_transitcluster,
                                       width=20, height=2, bg="#4CAF50", fg="white")
         self.btn_abstract_transitcluster.pack(pady=10)
+
+        self.btn_abstract_repare = tk.Button(root, text="Abstract_REPARE",
+                                                     command=self.abstract_repare,
+                                                     width=20, height=2, bg="#4CAF50", fg="white")
+        self.btn_abstract_repare.pack(pady=10)
 
         self.status = tk.Label(root, text="Waiting for file...", fg="gray")
         self.status.pack(side="bottom", pady=10)
@@ -331,7 +357,7 @@ class LauncherApp:
                 messagebox.showwarning("Logic Error", "No DAG loaded! Please load a file first.")
                 return
             abstracted_dag = cg(self.current_dag, size(self.current_dag.nodes)/2, None, 0)
-            abstract_path = DATA_PATH = '/home/taylanozgur/BackUp/taylanozgur/METU/CogS/Thesis/MyProjects/DataVisualizer/data/' + '/cagres/abstracted'
+            abstract_path = DATA_PATH + '/cagres/abstracted'
             DataVisualizer.plot_data(abstracted_dag, abstract_path)
             # self.display_comparison(self.current_dag, abstracted_dag)
         except Exception as e:
@@ -351,8 +377,8 @@ class LauncherApp:
                 return
             if isinstance(self.current_dag, dict):
                 self.current_dag = next(iter(self.current_dag.values()))
-            abstracted_dag = dr(self.current_dag, exposure="A", outcome="Y").reduce_dag()
-            abstract_path = DATA_PATH = '/home/taylanozgur/BackUp/taylanozgur/METU/CogS/Thesis/MyProjects/DataVisualizer/data/' + '/reducedag/abstracted'
+            abstracted_dag = dr(self.current_dag, exposure=None, outcome=None).reduce_dag()
+            abstract_path = DATA_PATH + '/reducedag/abstracted'
             DataVisualizer.plot_data(abstracted_dag, abstract_path)
             self.display_comparison(self.current_dag, abstracted_dag)
 
@@ -414,6 +440,28 @@ class LauncherApp:
             # This will show a popup so you know exactly what failed
             messagebox.showerror("Abstraction Error", f"Failed to run Transit Cluster:\n{e}")
 
+    def abstract_repare(self):
+        import traceback
+        try:
+            # Check if the "storage" is empty
+            if self.current_dag is None:
+                messagebox.showwarning("Logic Error", "No DAG loaded! Please load a file first.")
+                return
+            if isinstance(self.current_dag, dict):
+                self.current_dag = next(iter(self.current_dag.values()))
+
+
+            repare_model =  repare_dag.PartitionDagModelKnownDag().fit(self.current_dag)
+            abstracted_dag = repare_model.dag
+            abstract_path = f"{DATA_PATH}/repare/abstracted_dag"
+            DataVisualizer.plot_data(abstracted_dag, abstract_path)
+        except Exception as e:
+            # This will print the FULL error path to your console
+            print("\n--- DEBUG ERROR ---")
+            traceback.print_exc()
+
+            # This will show a popup so you know exactly what failed
+            messagebox.showerror("Abstraction Error", f"Failed to run Repare:\n{e}")
     def display_comparison(self, original_dag, abstracted_dag):
         # Create a figure with 1 row and 2 columns
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))

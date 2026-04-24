@@ -55,7 +55,18 @@ class RdaConverter:
                 # Convert to NetworkX
                 nx_graph = nx.nx_pydot.from_pydot(dot_graphs[0])
                 # Ensure it's a DiGraph
-                return nx.DiGraph(nx_graph)
+                G = nx.DiGraph(nx_graph)
+                nodes = list(G.nodes)
+
+                exposure_node = nodes[0]
+                outcome_node = nodes[-1]
+
+                G.nodes[exposure_node]["label"] = "exposure"
+                G.nodes[exposure_node]["role"] = "exposure"
+
+                G.nodes[outcome_node]["label"] = "outcome"
+                G.nodes[outcome_node]["role"] = "outcome"
+                return G
         except Exception as e:
             print(f"Pydot parsing failed: {e}")
 

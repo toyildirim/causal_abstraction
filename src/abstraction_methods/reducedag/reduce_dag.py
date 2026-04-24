@@ -7,6 +7,11 @@ if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 from gFormula import *
 
+# EXPOSURE = "Collected data"
+    # OUTCOME = "Real-world impact"
+EXPOSURE = "exposure"
+OUTCOME = "outcome"
+
 class DAGReducer:
     """
     A comprehensive Python implementation of the reduce DAG algorithm,
@@ -15,6 +20,7 @@ class DAGReducer:
     This class provides methods to identify uninformative variables in a DAG
     and reduce it to a minimal set of informative variables.
     """
+
 
     def __init__(self, G, exposure=None, outcome=None):
         """
@@ -28,14 +34,14 @@ class DAGReducer:
         self.G = G
 
         # 1. If not provided, try to find them in the 'label' attribute
-        if exposure is None:
-            exposure_nodes = [n for n, d in G.nodes(data=True) if d.get('label') == 'exposure']
+        if exposure is None or exposure == "A":
+            exposure_nodes = [n for n, d in G.nodes(data=True) if n == EXPOSURE or d.get("label") == EXPOSURE or d.get("role") == EXPOSURE]
             self.exposure = exposure_nodes[0] if exposure_nodes else None
         else:
             self.exposure = exposure
 
-        if outcome is None:
-            outcome_nodes = [n for n, d in G.nodes(data=True) if d.get('label') == 'outcome']
+        if outcome is None or outcome == "Y":
+            outcome_nodes = [n for n, d in G.nodes(data=True) if n == OUTCOME or d.get("label") == OUTCOME  or d.get("role") == OUTCOME]
             self.outcome = outcome_nodes[0] if outcome_nodes else None
         else:
             self.outcome = outcome
@@ -485,7 +491,9 @@ class DAGReducer:
         abstracted_g = self.G.copy()
 
         # Create a temporary reducer for the working graph
-        temp_reducer = DAGReducer(abstracted_g, exposure=self.exposure, outcome=self.outcome)
+        # temp_reducer = DAGReducer(abstracted_g, exposure=self.exposure, outcome=self.outcome)
+        temp_reducer = DAGReducer(abstracted_g, exposure=None, outcome=None)
+
 
         # Step 1: Project out N-set and I-set first (as in R's project.out.N.and.I)
         temp_reducer._project_out_n_and_i()

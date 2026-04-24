@@ -7,7 +7,7 @@ import sys
 import networkx as nx
 import pandas as pd
 from causallearn.search.ConstraintBased import PC
-import cagres_utils as Utils
+import abstraction_methods.cagres.cagres_utils as Utils
 from dowhy import CausalModel
 from util import graph_utils
 
