@@ -599,6 +599,8 @@ class TransitCluster:
 
 
     def expand_cluster(self, t, A, B, G,nodes):
+        if nodes is None:
+            nodes = self.nodes
         B_prime = list(B)
         # Use lists for existence checks to avoid set hashing
         A_v_lists = [item["vertices"] for item in A]
@@ -644,7 +646,7 @@ class TransitCluster:
                     current_A.append(st_clust)
                     A_v_lists.append(st_vertices)
 
-                    recursive_exp = self.expand_cluster(st_clust, A + current_A, B_prime, G)
+                    recursive_exp = self.expand_cluster(st_clust, A + current_A, B_prime, G, nodes)
                     current_A.extend(recursive_exp)
 
         return current_A

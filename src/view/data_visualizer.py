@@ -15,8 +15,11 @@ from abstraction_methods.reducedag.reduce_dag import DAGReducer as dr
 from abstraction_methods.transitcluster.transit_cluster import TransitCluster as tc
 from util.file_utils import FileUtil as fu
 from util.rda_converter import RdaConverter as rda
-from util.graph_utils import GraphUtils
-from abstraction_methods.repare import repare_known_dag_model as repare_dag
+from util.graph_utils import GraphUtils, GraphMapper
+
+
+# from abstraction_methods.repare import repare_known_dag_model as repare_dag
+from abstraction_methods.repare import repare as repare_dag
 # Set the backend for Linux/PyCharm compatibility
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -450,11 +453,31 @@ class LauncherApp:
             if isinstance(self.current_dag, dict):
                 self.current_dag = next(iter(self.current_dag.values()))
 
+            # order, adj = GraphUtils.get_dag_metadata(self.current_dag)
+            # repare_model =  repare_dag.PartitionDagModelOracle()
+            # abstracted_dag = repare_model.fit(order, adj)
+            # 1. Initialize with the DiGraph object
+            mapper = GraphMapper(self.current_dag)
 
-            repare_model =  repare_dag.PartitionDagModelKnownDag().fit(self.current_dag)
-            abstracted_dag = repare_model.dag
+            # 2. Get the numerical versions
+            order, adj = mapper.get_indexed_data()
+            # order = [3, 1, 2, 4]
+            # adj = {1: [2], 3: [2], 2: [4]}
+            # 3. Fit the model
+            repare_model = repare_dag.PartitionDagModelOracle()
+            abstracted_dag_numeric = repare_model.fit(order, adj)
+
+            # 4. Map back to strings for visualization
+            abstracted_dag = mapper.relabel_abstracted_dag(abstracted_dag_numeric)
             abstract_path = f"{DATA_PATH}/repare/abstracted_dag"
-            DataVisualizer.plot_data(abstracted_dag, abstract_path)
+            # DataVisualizer.plot_data(abstracted_dag, abstract_path)
+            coarsening_history = repare_model.get_coarsening_history()
+            for i, g in enumerate(coarsening_history):
+                print(f"\nCoarsening step {i}")
+                print("Nodes:", list(g.nodes()))
+                print("Edges:", list(g.edges()))
+                DataVisualizer.plot_data(mapper.relabel_abstracted_dag(g), f"{abstract_path}_{i}")
+
         except Exception as e:
             # This will print the FULL error path to your console
             print("\n--- DEBUG ERROR ---")

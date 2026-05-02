@@ -15,7 +15,8 @@ class PartitionDagModelKnownDag(object):
         nodes = list(dag.nodes())
         if not all(isinstance(n, int) for n in nodes):
             # Map nodes to integers if necessary
-            node_map = {node: i for i, node in enumerate(sorted(nodes))}
+            # node_map = {node: i for i, node in enumerate(sorted(nodes))}
+            node_map = {node: i for i, node in enumerate(nodes)}
             self.node_map = node_map
             self.reverse_map = {v: k for k, v in node_map.items()}
             mapped_dag = nx.relabel_nodes(dag, node_map)

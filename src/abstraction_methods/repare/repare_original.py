@@ -15,25 +15,16 @@ class PartitionDagModelOracle(object):
     def __init__(self, rng=np.random.default_rng(0)) -> None:
         self.dag = nx.DiGraph()
         self.rng = rng
-        self.coarsening_history = []
 
     def fit(self, order, adj) -> object:
         self.order = order
         self.adj = adj
-
-        # Original REPaRe/oracle logic
+        # always use lexicographical order for node partitions
         init_partition = [set(order)]  # trivial coarsening
         self.dag.add_node(tuple(sorted(order)))
         self.refinable = deque(init_partition)
-
-        # Added only for observation: keep initial coarsest DAG
-        self.coarsening_history = []
-
         while len(self.refinable) > 0:
             self._recurse()
-            # Added only for observation: keep each intermediate DAG
-            self.coarsening_history.append(self.dag.copy())
-
         return self.dag
 
     def _refine(self):
@@ -78,8 +69,6 @@ class PartitionDagModelOracle(object):
             self.dag.add_edge(tuple(u), tuple(v))
         self.dag.remove_node(tuple(to_refine))
 
-    def get_coarsening_history(self):
-        return self.coarsening_history
 
 
 class PartitionDagModelIvn(PartitionDagModelOracle):

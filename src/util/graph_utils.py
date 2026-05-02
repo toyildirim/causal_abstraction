@@ -231,3 +231,60 @@ class GraphUtils:
 
         edges_str = "; ".join(edges_str_list)
         return f"digraph {{{edges_str};}}"
+    @staticmethod
+    def get_dag_metadata(G):
+        """
+        Given a NetworkX DiGraph, returns the topological order
+        and the adjacency list in a dictionary format.
+        """
+        # 1. Generate 'order' (Topological Sort)
+        # We use lexicographical_topological_sort to ensure the order
+        # is deterministic and matches the 'sorted' requirement in your code.
+        order = list(nx.lexicographical_topological_sort(G))
+
+        # 2. Generate 'adj' (Adjacency List)
+        # We only include nodes that actually have successors to match
+        # the format: {node: [children]}
+        adj = {n: list(G.successors(n)) for n in G.nodes() if list(G.successors(n))}
+
+        return order, adj
+
+
+class GraphMapper:
+    def __init__(self, dag):
+        # 1. NetworkX uses .nodes() instead of .keys()
+        self.labels = sorted(list(dag.nodes()))
+        self.dag = dag
+        # 2. Create the Bi-Map
+        self.label_to_id = {label: i for i, label in enumerate(self.labels)}
+        self.id_to_label = {i: label for i, label in enumerate(self.labels)}
+
+    def get_indexed_data(self):
+        """Returns the order (list of ints) and adj (dict of list of ints)."""
+        # Numerical Order (topological sort of IDs)
+        # We sort the labels first to ensure lexicographical consistency
+        order = [self.label_to_id[node] for node in nx.lexicographical_topological_sort(self.dag)]
+
+        # Numerical Adjacency List
+        adj = {}
+        for node in self.dag.nodes():
+            parent_id = self.label_to_id[node]
+            # Get successors from the DiGraph and map them to IDs
+            adj[parent_id] = [self.label_to_id[child] for child in self.dag.successors(node)]
+
+        return order, adj
+
+    def relabel_abstracted_dag(self, abstracted_dag):
+        """Converts the tuples of IDs back to tuples of Labels."""
+        new_dag = nx.DiGraph()
+        for node_tuple in abstracted_dag.nodes():
+            # Translate each ID in the tuple back to its label and sort for consistency
+            new_node = tuple(sorted([self.id_to_label[i] for i in node_tuple]))
+            new_dag.add_node(new_node)
+
+        for u, v in abstracted_dag.edges():
+            new_u = tuple(sorted([self.id_to_label[i] for i in u]))
+            new_v = tuple(sorted([self.id_to_label[i] for i in v]))
+            new_dag.add_edge(new_u, new_v)
+
+        return new_dag
