@@ -8,6 +8,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pydot
+from PIL import report
 from numpy.ma.core import size
 
 from abstraction_methods.cagres.cagres import CaGreS as cg
@@ -16,7 +17,8 @@ from abstraction_methods.transitcluster.transit_cluster import TransitCluster as
 from util.file_utils import FileUtil as fu
 from util.rda_converter import RdaConverter as rda
 from util.graph_utils import GraphUtils, GraphMapper
-
+from util.report.dag_reporter import GraphReport
+import util.report.ri_reporter as ri_ari_reporter
 
 # from abstraction_methods.repare import repare_known_dag_model as repare_dag
 from abstraction_methods.repare import repare as repare_dag
@@ -27,6 +29,7 @@ import seaborn as sns
 from pyvis.network import Network
 import webbrowser
 
+import ml_3level_dag_creator as ml_dg_creator
 # Constants
 DATA_PATH = '/home/taylanozgur/BackUp/taylanozgur/METU/CogS/Thesis/MyProjects/DataVisualizer/data/'
 HTML_DIR = os.path.join(DATA_PATH, "html")
@@ -252,7 +255,7 @@ class LauncherApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Thesis Data Visualfrom_r_formulaizer")
-        self.root.geometry("600x400")
+        self.root.geometry("600x800")
         self.current_dag = None  # This is your "storage" for the selected DAG
         self.nodes = None  # To store master nodes if needed for abstraction methods
         tk.Label(root, text="Data Visualizer", font=("Arial", 14, "bold")).pack(pady=20)
@@ -278,8 +281,18 @@ class LauncherApp:
                                                      width=20, height=2, bg="#4CAF50", fg="white")
         self.btn_abstract_repare.pack(pady=10)
 
+        self.btn_report = tk.Button(root, text="DAG Abstraction Report",
+                                            command=self.report_dag,
+                                            width=20, height=2, bg="#4CAF50", fg="white")
+        self.btn_report.pack(pady=10)
+
         self.status = tk.Label(root, text="Waiting for file...", fg="gray")
         self.status.pack(side="bottom", pady=10)
+
+        self.ml_child_dag = ml_dg_creator.create_child_level_dag_GPT54()
+        self.ml_teen_dag = ml_dg_creator.create_teen_level_dag_GPT54()
+        self.ml_grad_dag = ml_dg_creator.create_grad_level_dag_GPT54()
+
 
     def load_and_visualize(self):
         file_path = filedialog.askopenfilename(
@@ -350,8 +363,6 @@ class LauncherApp:
             print(f"Error reading or parsing .dot file: {e}")
         return None
 
-
-
     def abstract_cagres(self):
         import traceback
         try:
@@ -360,9 +371,12 @@ class LauncherApp:
                 messagebox.showwarning("Logic Error", "No DAG loaded! Please load a file first.")
                 return
             abstracted_dag = cg(self.current_dag, size(self.current_dag.nodes)/2, None, 0)
+            abstracted_dags = []
+            abstracted_dags.append(abstracted_dag)
             abstract_path = DATA_PATH + '/cagres/abstracted'
             DataVisualizer.plot_data(abstracted_dag, abstract_path)
             # self.display_comparison(self.current_dag, abstracted_dag)
+            self.report_dag(abstracted_dags,"cagres")
         except Exception as e:
             # This will print the FULL error path to your console
             print("\n--- DEBUG ERROR ---")
@@ -380,10 +394,14 @@ class LauncherApp:
                 return
             if isinstance(self.current_dag, dict):
                 self.current_dag = next(iter(self.current_dag.values()))
+            abstracted_dags = []
             abstracted_dag = dr(self.current_dag, exposure=None, outcome=None).reduce_dag()
+            abstracted_dags.append(abstracted_dag)
+
             abstract_path = DATA_PATH + '/reducedag/abstracted'
             DataVisualizer.plot_data(abstracted_dag, abstract_path)
-            self.display_comparison(self.current_dag, abstracted_dag)
+            # self.display_comparison(self.current_dag, abstracted_dag)
+            self.report_dag(abstracted_dags,"reducedag")
 
         except Exception as e:
             # This will print the FULL error path to your console
@@ -416,7 +434,7 @@ class LauncherApp:
             #     abstract_path = DATA_PATH  + '/transitcluster/abstracted'
             #     DataVisualizer.plot_data(abstracted_dag, abstract_path)
             #     # self.display_comparison(self.current_dag, abstracted_dag)
-
+            grouped_dags = []
            # 3. THE LOOP: (Matches R: for (tc in tcluster))
            # 'i' increments automatically (0, 1, 2...).
             for i, cluster in enumerate(t_clusters):
@@ -430,11 +448,12 @@ class LauncherApp:
                 # 4. ABSTRACTION: (Matches R: g_abstract <- grouped_graph(tc))
                 # This merges the 13 nodes into that single 'Blue Bubble' (Macro-Node).
                 abstracted_dag = tc_engine.grouped_graph(cluster,self.current_dag)
-
+                grouped_dags.append(abstracted_dag)
                 # 5. PLOT: (Matches R: plot(g_abstract))
                 # Use i + 1 directly in the path to avoid overwriting files.
                 abstract_path = f"{DATA_PATH}/transitcluster/abstracted_cluster_{i + 1}"
-                DataVisualizer.plot_data(abstracted_dag, abstract_path)
+                # DataVisualizer.plot_data(abstracted_dag, abstract_path)
+            self.report_dag(grouped_dags,"transitcluster")
         except Exception as e:
             # This will print the FULL error path to your console
             print("\n--- DEBUG ERROR ---")
@@ -472,11 +491,28 @@ class LauncherApp:
             abstract_path = f"{DATA_PATH}/repare/abstracted_dag"
             # DataVisualizer.plot_data(abstracted_dag, abstract_path)
             coarsening_history = repare_model.get_coarsening_history()
-            for i, g in enumerate(coarsening_history):
-                print(f"\nCoarsening step {i}")
-                print("Nodes:", list(g.nodes()))
-                print("Edges:", list(g.edges()))
-                DataVisualizer.plot_data(mapper.relabel_abstracted_dag(g), f"{abstract_path}_{i}")
+            coarsening_relabeled = [
+                mapper.relabel_abstracted_dag(g)
+                for g in coarsening_history
+            ]
+            self.report_dag(coarsening_relabeled,"repare")
+
+
+            for i, g in enumerate(coarsening_relabeled):
+                # print(f"\nCoarsening step {i}")
+                # print("Nodes:", list(g.nodes()))
+                # print("Edges:", list(g.edges()))
+                #
+                result = ri_ari_reporter.ri_ari_report(
+                    oracle_dag=self.ml_teen_dag,
+                    candidate_dag= g
+                )
+
+                print("RI:", result["RI"])
+                print("ARI:", result["ARI"])
+                print("Oracle labels:", result["oracle_labels"])
+                print("Candidate labels:", result["candidate_labels"])
+                # DataVisualizer.plot_data(g, f"{abstract_path}_{i}")
 
         except Exception as e:
             # This will print the FULL error path to your console
@@ -485,6 +521,25 @@ class LauncherApp:
 
             # This will show a popup so you know exactly what failed
             messagebox.showerror("Abstraction Error", f"Failed to run Repare:\n{e}")
+
+    def report_dag(self, abstracted_dags, abstraction_method):
+        reporter = GraphReport(abstracted_dags)
+
+        # General graph report
+        df_general = reporter.report()
+        print(df_general)
+        df_general.to_html(f"{abstraction_method}_df_general.html")
+
+        # Coarsening-specific size report
+        df_abstraction = reporter.abstraction_level_report()
+        print(df_abstraction)
+        df_abstraction.to_html(f"{abstraction_method}_df_abstraction.html")
+
+        # Node-level abstract size report
+        df_nodes = reporter.node_size_report()
+        print(df_nodes)
+        df_nodes.to_html(f"{abstraction_method}_df_nodes.html")
+
     def display_comparison(self, original_dag, abstracted_dag):
         # Create a figure with 1 row and 2 columns
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))

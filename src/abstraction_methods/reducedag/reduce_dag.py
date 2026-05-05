@@ -554,7 +554,7 @@ class DAGReducer:
 
             print(f"--- Analyzing Path: {exp} -> {out} ---")
 
-            # Initialize reducer for this specific context
+            # Initialize rabstracted_dagseducer for this specific context
             reducer = DAGReducer(G, exposure=exp, outcome=out)
 
             # Find uninformative nodes for THIS specific pair

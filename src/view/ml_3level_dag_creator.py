@@ -39,11 +39,11 @@ class MLGraphGenerator:
 def get_grad_student_dag():
     G = nx.DiGraph(name="L3_Graduate_Student")
     edges = [
-        ("Bias", "Data"), ("Data", "Feature Extraction"),
-        ("Labels", "Supervised"), ("Feature Extraction", "Supervised"),
-        ("Feature Extraction", "Manifold Projection"), ("Projection Function", "Manifold Projection"),
-        ("Manifold Projection", "Distance Calculation"), ("Distance Metric", "Distance Calculation"),
-        ("Distance Calculation", "Clustering"), ("Clustering", "Unsupervised"),
+        ("Bias", "Data"), ("Data", "FeatureExtraction"),
+        ("Labels", "Supervised"), ("FeatureExtraction", "Supervised"),
+        ("FeatureExtraction", "ManifoldProjection"), ("ProjectionFunction", "ManifoldProjection"),
+        ("ManifoldProjection", "DistanceCalculation"), ("DistanceMetric", "DistanceCalculation"),
+        ("DistanceCalculation", "Clustering"), ("Clustering", "Unsupervised"),
         ("Actions", "RL"), ("Rewards", "RL"),
         ("Supervised", "Model"), ("Unsupervised", "Model"), ("RL", "Model"),
         ("Hyperparams", "Model"), ("Model", "Training"),
@@ -226,7 +226,7 @@ def export_ml_dags():
     # l3_gpt = create_graduate_level_dag()
     # l3_gemini = get_grad_student_dag()
     # l3_gemini_2 = create_grad_dag();
-    l3_gpt_54 = create_grad_level_dag_GPT_54();
+    l3_gpt_54 = create_grad_level_dag_GPT54();
     l3_gemini_pro = get_graduate_level_dag_gemini_pro()
 
     # util.save_nx_graph(l3_gpt, "l3_grad_gpt")
@@ -239,7 +239,7 @@ def export_ml_dags():
     # l2_gpt = create_teen_level_dag()
     # l2_gemini = get_teen_dag()
     # l2_gemini_2 = create_teen_dag()
-    l2_gpt_54 = create_teen_level_dag_GPT_54()
+    l2_gpt_54 = create_teen_level_dag_GPT54()
     l2_gemini_pro = get_teen_level_dag_gemini_pro()
 
     # util.save_nx_graph(l2_gpt, "l2_teen_gpt")
@@ -333,12 +333,12 @@ def create_grad_dag():
 
 #ChatGPT 5.4 Thinking
 
-EXPOSURE = "Collected data"
-OUTCOME = "Real-world impact"
+EXPOSURE = "CollectedData"
+OUTCOME = "RealWorldImpact"
 # EXPOSURE = "exposure"
 # OUTCOME = "outcome"
 
-def create_grad_level_dag_GPT_54():
+def create_grad_level_dag_GPT54():
     """
     Create the Grad-level DAG.
     Lowest abstraction.
@@ -351,75 +351,75 @@ def create_grad_level_dag_GPT_54():
         EXPOSURE,
         OUTCOME,
 
-        "Real-world process",
-        "Social bias / measurement bias",
-        "Data quality",
+        "RealWorldProcess",
+        "SocialBiasMeasurementBias",
+        "DataQuality",
         "Representativeness",
         "Labels",
         "Preprocessing",
-        "Learning setup",
-        "Supervised learning",
-        "Unsupervised learning",
-        "Reinforcement learning",
-        "Deep learning",
-        "Feature engineering / Representation learning",
-        "Model architecture",
-        "Training objective",
-        "Optimization / Parameter learning",
-        "Trained model",
+        "LearningSetup",
+        "SupervisedLearning",
+        "UnsupervisedLearning",
+        "ReinforcementLearning",
+        "DeepLearning",
+        "FeatureEngineeringRepresentationLearning",
+        "ModelArchitecture",
+        "TrainingObjective",
+        "OptimizationParameterLearning",
+        "TrainedModel",
         "Prediction",
-        "Accuracy evaluation",
-        "Usefulness evaluation",
-        "Interpretability evaluation",
-        "Fairness / Bias evaluation",
-        "Deployment decision",
-        "Automated decision / Product behavior",
+        "AccuracyEvaluation",
+        "UsefulnessEvaluation",
+        "InterpretabilityEvaluation",
+        "FairnessBiasEvaluation",
+        "DeploymentDecision",
+        "AutomatedDecisionProductBehavior",
     ]
 
     edges = [
-        ("Real-world process", EXPOSURE),
-        ("Real-world process", "Social bias / measurement bias"),
-        ("Social bias / measurement bias", EXPOSURE),
+        ("RealWorldProcess", EXPOSURE),
+        ("RealWorldProcess", "SocialBiasMeasurementBias"),
+        ("SocialBiasMeasurementBias", EXPOSURE),
 
-        (EXPOSURE, "Data quality"),
+        (EXPOSURE, "DataQuality"),
         (EXPOSURE, "Representativeness"),
         (EXPOSURE, "Labels"),
 
-        ("Data quality", "Preprocessing"),
+        ("DataQuality", "Preprocessing"),
         ("Representativeness", "Preprocessing"),
-        ("Labels", "Learning setup"),
+        ("Labels", "LearningSetup"),
 
-        ("Learning setup", "Supervised learning"),
-        ("Learning setup", "Unsupervised learning"),
-        ("Learning setup", "Reinforcement learning"),
-        ("Learning setup", "Deep learning"),
+        ("LearningSetup", "SupervisedLearning"),
+        ("LearningSetup", "UnsupervisedLearning"),
+        ("LearningSetup", "ReinforcementLearning"),
+        ("LearningSetup", "DeepLearning"),
 
-        ("Preprocessing", "Feature engineering / Representation learning"),
+        ("Preprocessing", "FeatureEngineeringRepresentationLearning"),
 
-        ("Feature engineering / Representation learning", "Model architecture"),
-        ("Supervised learning", "Model architecture"),
-        ("Unsupervised learning", "Model architecture"),
-        ("Reinforcement learning", "Model architecture"),
-        ("Deep learning", "Model architecture"),
+        ("FeatureEngineeringRepresentationLearning", "ModelArchitecture"),
+        ("SupervisedLearning", "ModelArchitecture"),
+        ("UnsupervisedLearning", "ModelArchitecture"),
+        ("ReinforcementLearning", "ModelArchitecture"),
+        ("DeepLearning", "ModelArchitecture"),
 
-        ("Model architecture", "Training objective"),
-        ("Training objective", "Optimization / Parameter learning"),
-        ("Optimization / Parameter learning", "Trained model"),
+        ("ModelArchitecture", "TrainingObjective"),
+        ("TrainingObjective", "OptimizationParameterLearning"),
+        ("OptimizationParameterLearning", "TrainedModel"),
 
-        ("Trained model", "Prediction"),
+        ("TrainedModel", "Prediction"),
 
-        ("Prediction", "Accuracy evaluation"),
-        ("Prediction", "Usefulness evaluation"),
-        ("Prediction", "Interpretability evaluation"),
-        ("Prediction", "Fairness / Bias evaluation"),
+        ("Prediction", "AccuracyEvaluation"),
+        ("Prediction", "UsefulnessEvaluation"),
+        ("Prediction", "InterpretabilityEvaluation"),
+        ("Prediction", "FairnessBiasEvaluation"),
 
-        ("Accuracy evaluation", "Deployment decision"),
-        ("Usefulness evaluation", "Deployment decision"),
-        ("Interpretability evaluation", "Deployment decision"),
-        ("Fairness / Bias evaluation", "Deployment decision"),
+        ("AccuracyEvaluation", "DeploymentDecision"),
+        ("UsefulnessEvaluation", "DeploymentDecision"),
+        ("InterpretabilityEvaluation", "DeploymentDecision"),
+        ("FairnessBiasEvaluation", "DeploymentDecision"),
 
-        ("Deployment decision", "Automated decision / Product behavior"),
-        ("Automated decision / Product behavior", OUTCOME),
+        ("DeploymentDecision", "AutomatedDecisionProductBehavior"),
+        ("AutomatedDecisionProductBehavior", OUTCOME),
     ]
 
     G = nx.DiGraph()
@@ -443,7 +443,7 @@ def create_grad_level_dag_GPT_54():
     return G
 
 
-def create_teen_level_dag_GPT_54():
+def create_teen_level_dag_GPT54():
     """
     Create the Teen-level DAG.
     Middle abstraction.
@@ -458,56 +458,56 @@ def create_teen_level_dag_GPT_54():
         EXPOSURE,
         OUTCOME,
 
-        "Real-world process + Social bias / measurement bias",
-        "Data quality + Representativeness + Labels",
-        "Preprocessing + Feature engineering / Representation learning",
-        "Learning setup + Supervised learning + Unsupervised learning + Reinforcement learning + Deep learning + Model architecture",
-        "Training objective + Optimization / Parameter learning",
-        "Trained model",
+        "RealWorldProcess_SocialBiasMeasurementBias",
+        "DataQuality_Representativeness_Labels",
+        "Preprocessing_FeatureEngineeringRepresentationLearning",
+        "LearningSetup_SupervisedLearning_UnsupervisedLearning_ReinforcementLearning_DeepLearning_ModelArchitecture",
+        "TrainingObjective_OptimizationParameterLearning",
+        "TrainedModel",
         "Prediction",
-        "Accuracy evaluation + Usefulness evaluation + Interpretability evaluation + Fairness / Bias evaluation",
-        "Deployment decision + Automated decision / Product behavior",
+        "AccuracyEvaluation_UsefulnessEvaluation_InterpretabilityEvaluation_FairnessBiasEvaluation",
+        "DeploymentDecision_AutomatedDecisionProductBehavior",
     ]
 
     edges = [
         (
-            "Real-world process + Social bias / measurement bias",
+            "RealWorldProcess_SocialBiasMeasurementBias",
             EXPOSURE,
         ),
         (
             EXPOSURE,
-            "Data quality + Representativeness + Labels",
+            "DataQuality_Representativeness_Labels",
         ),
         (
-            "Data quality + Representativeness + Labels",
-            "Preprocessing + Feature engineering / Representation learning",
+            "DataQuality_Representativeness_Labels",
+            "Preprocessing_FeatureEngineeringRepresentationLearning",
         ),
         (
-            "Preprocessing + Feature engineering / Representation learning",
-            "Learning setup + Supervised learning + Unsupervised learning + Reinforcement learning + Deep learning + Model architecture",
+            "Preprocessing_FeatureEngineeringRepresentationLearning",
+            "LearningSetup_SupervisedLearning_UnsupervisedLearning_ReinforcementLearning_DeepLearning_ModelArchitecture",
         ),
         (
-            "Learning setup + Supervised learning + Unsupervised learning + Reinforcement learning + Deep learning + Model architecture",
-            "Training objective + Optimization / Parameter learning",
+            "LearningSetup_SupervisedLearning_UnsupervisedLearning_ReinforcementLearning_DeepLearning_ModelArchitecture",
+            "TrainingObjective_OptimizationParameterLearning",
         ),
         (
-            "Training objective + Optimization / Parameter learning",
-            "Trained model",
+            "TrainingObjective_OptimizationParameterLearning",
+            "TrainedModel",
         ),
         (
-            "Trained model",
+            "TrainedModel",
             "Prediction",
         ),
         (
             "Prediction",
-            "Accuracy evaluation + Usefulness evaluation + Interpretability evaluation + Fairness / Bias evaluation",
+            "AccuracyEvaluation_UsefulnessEvaluation_InterpretabilityEvaluation_FairnessBiasEvaluation",
         ),
         (
-            "Accuracy evaluation + Usefulness evaluation + Interpretability evaluation + Fairness / Bias evaluation",
-            "Deployment decision + Automated decision / Product behavior",
+            "AccuracyEvaluation_UsefulnessEvaluation_InterpretabilityEvaluation_FairnessBiasEvaluation",
+            "DeploymentDecision_AutomatedDecisionProductBehavior",
         ),
         (
-            "Deployment decision + Automated decision / Product behavior",
+            "DeploymentDecision_AutomatedDecisionProductBehavior",
             OUTCOME,
         ),
     ]
@@ -548,36 +548,36 @@ def create_child_level_dag_GPT54():
         EXPOSURE,
         OUTCOME,
 
-        "Real-world process + Social bias / measurement bias",
-        "Data quality + Representativeness + Labels + Preprocessing + Feature engineering / Representation learning",
-        "Learning setup + Supervised learning + Unsupervised learning + Reinforcement learning + Deep learning + Model architecture + Training objective + Optimization / Parameter learning + Trained model",
+        "RealWorldProcess_SocialBiasMeasurementBias",
+        "DataQuality_Representativeness_Labels_Preprocessing_FeatureEngineeringRepresentationLearning",
+        "LearningSetup_SupervisedLearning_UnsupervisedLearning_ReinforcementLearning_DeepLearning_ModelArchitecture_TrainingObjective_OptimizationParameterLearning_TrainedModel",
         "Prediction",
-        "Accuracy evaluation + Usefulness evaluation + Interpretability evaluation + Fairness / Bias evaluation + Deployment decision + Automated decision / Product behavior",
+        "AccuracyEvaluation_UsefulnessEvaluation_InterpretabilityEvaluation_FairnessBiasEvaluation_DeploymentDecision_AutomatedDecisionProductBehavior",
     ]
 
     edges = [
         (
-            "Real-world process + Social bias / measurement bias",
+            "RealWorldProcess_SocialBiasMeasurementBias",
             EXPOSURE,
         ),
         (
             EXPOSURE,
-            "Data quality + Representativeness + Labels + Preprocessing + Feature engineering / Representation learning",
+            "DataQuality_Representativeness_Labels_Preprocessing_FeatureEngineeringRepresentationLearning",
         ),
         (
-            "Data quality + Representativeness + Labels + Preprocessing + Feature engineering / Representation learning",
-            "Learning setup + Supervised learning + Unsupervised learning + Reinforcement learning + Deep learning + Model architecture + Training objective + Optimization / Parameter learning + Trained model",
+            "DataQuality_Representativeness_Labels_Preprocessing_FeatureEngineeringRepresentationLearning",
+            "LearningSetup_SupervisedLearning_UnsupervisedLearning_ReinforcementLearning_DeepLearning_ModelArchitecture_TrainingObjective_OptimizationParameterLearning_TrainedModel",
         ),
         (
-            "Learning setup + Supervised learning + Unsupervised learning + Reinforcement learning + Deep learning + Model architecture + Training objective + Optimization / Parameter learning + Trained model",
+            "LearningSetup_SupervisedLearning_UnsupervisedLearning_ReinforcementLearning_DeepLearning_ModelArchitecture_TrainingObjective_OptimizationParameterLearning_TrainedModel",
             "Prediction",
         ),
         (
             "Prediction",
-            "Accuracy evaluation + Usefulness evaluation + Interpretability evaluation + Fairness / Bias evaluation + Deployment decision + Automated decision / Product behavior",
+            "AccuracyEvaluation_UsefulnessEvaluation_InterpretabilityEvaluation_FairnessBiasEvaluation_DeploymentDecision_AutomatedDecisionProductBehavior",
         ),
         (
-            "Accuracy evaluation + Usefulness evaluation + Interpretability evaluation + Fairness / Bias evaluation + Deployment decision + Automated decision / Product behavior",
+            "AccuracyEvaluation_UsefulnessEvaluation_InterpretabilityEvaluation_FairnessBiasEvaluation_DeploymentDecision_AutomatedDecisionProductBehavior",
             OUTCOME,
         ),
     ]
