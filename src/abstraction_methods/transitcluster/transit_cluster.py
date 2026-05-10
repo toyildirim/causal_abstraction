@@ -567,8 +567,8 @@ class TransitCluster:
         grouped = g.subgraph(keep).copy()
 
         # R: representative <- paste0(grouping$vertices, collapse = "")
-        representative = "".join(v_to_hide)
-
+        # representative = "".join(v_to_hide)
+        representative = "_".join(v_to_hide)
         # R: grouped <- grouped + vertex(representative)
         grouped.add_node(representative, description="Collapsed Component")
 

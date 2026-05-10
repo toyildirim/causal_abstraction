@@ -1,6 +1,7 @@
 import networkx as nx
 from dodiscover.metrics import structure_hamming_dist
-
+import numpy as np
+from sklearn.metrics import jaccard_score
 
 def node_to_block(node, sep="_"):
     if isinstance(node, tuple):
@@ -66,3 +67,39 @@ def shd_if_same_partition(oracle_abs_dag, candidate_abs_dag, sep="_", double_for
         "shd": shd,
         "message": "SHD computed because abstract partitions match."
     }
+
+def get_node_to_macro_map(G, sep="_"):
+    """
+    Creates a mapping from each micro-node to its corresponding macro-node object.
+    Example: {'AccuracyEvaluation': 'Accuracy_Fairness_Usefulness'}
+    """
+    mapping = {}
+    for macro_node in G.nodes():
+        # Uses your logic to split strings or handle sets/tuples
+        block = node_to_block(macro_node, sep=sep)
+        for micro_node in block:
+            mapping[micro_node] = macro_node
+    return mapping
+
+def graph_to_adj_matrix(G, micro_node_list, sep="_"):
+    """
+    Converts an abstracted DAG into a micro-level 25x25 matrix.
+    """
+    n = len(micro_node_list)
+    matrix = np.zeros((n, n), dtype=int)
+
+    # 1. Get the dictionary mapping (The "Translation Table")
+    node_map = get_node_to_macro_map(G, sep=sep)
+
+    # 2. Build the matrix using direct dictionary lookups
+    for i, u in enumerate(micro_node_list):
+        for j, v in enumerate(micro_node_list):
+            m_u = node_map.get(u)
+            m_v = node_map.get(v)
+
+            # If both micro-nodes are part of the abstraction and connected in G
+            if m_u is not None and m_v is not None:
+                if G.has_edge(m_u, m_v):
+                    matrix[i, j] = 1
+
+    return matrix

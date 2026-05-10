@@ -21,7 +21,7 @@ from util.report import shd_reporter
 from util.report.dag_reporter import GraphReport
 import util.report.ri_reporter as ri_ari_reporter
 import util.report.shd_reporter
-
+import util.report.comparison_reporter as cr
 # from abstraction_methods.repare import repare_known_dag_model as repare_dag
 from abstraction_methods.repare import repare as repare_dag
 # Set the backend for Linux/PyCharm compatibility
@@ -378,18 +378,18 @@ class LauncherApp:
 
 
             abstract_path = DATA_PATH + '/cagres/abstracted'
-            DataVisualizer.plot_data(abstracted_dag_teen, f"{abstract_path}_teen")
-            DataVisualizer.plot_data(abstracted_dag_child, f"{abstract_path}_child")
+            # DataVisualizer.plot_data(abstracted_dag_teen, f"{abstract_path}_teen")
+            # DataVisualizer.plot_data(abstracted_dag_child, f"{abstract_path}_child")
             # self.display_comparison(self.current_dag, abstracted_dag)
             abstracted_dags = []
             # abstracted_dags.append(abstracted_dag)
             abstracted_dags.append(abstracted_dag_teen)
             self.report_dag(abstracted_dags,"cagres")
             self.compare_dags(abstracted_dags, self.ml_teen_dag)
-            abstracted_dags.remove(abstracted_dag_teen)
-            abstracted_dags.append(abstracted_dag_child)
-            self.report_dag(abstracted_dags,"cagres")
-            self.compare_dags(abstracted_dags, self.ml_child_dag)
+            # abstracted_dags.remove(abstracted_dag_teen)
+            # abstracted_dags.append(abstracted_dag_child)
+            # self.report_dag(abstracted_dags,"cagres")
+            # self.compare_dags(abstracted_dags, self.ml_child_dag)
 
         except Exception as e:
             # This will print the FULL error path to your console
@@ -462,12 +462,42 @@ class LauncherApp:
                 # 4. ABSTRACTION: (Matches R: g_abstract <- grouped_graph(tc))
                 # This merges the 13 nodes into that single 'Blue Bubble' (Macro-Node).
                 abstracted_dag = tc_engine.grouped_graph(cluster,self.current_dag)
-                grouped_dags.append(abstracted_dag)
+                if '' not in abstracted_dag:
+                    grouped_dags.append(abstracted_dag)
                 # 5. PLOT: (Matches R: plot(g_abstract))
                 # Use i + 1 directly in the path to avoid overwriting files.
                 abstract_path = f"{DATA_PATH}/transitcluster/abstracted_cluster_{i + 1}"
                 # DataVisualizer.plot_data(abstracted_dag, abstract_path)
-            self.report_dag(grouped_dags,"transitcluster")
+            # self.report_dag(grouped_dags,"transitcluster")
+
+            self.report_dag(grouped_dags, "transitcluster")
+
+            for i, g in enumerate(grouped_dags):
+                # print(f"\nCoarsening step {i}")
+                # print("Nodes:", list(g.nodes()))
+                # print("Edges:", list(g.edges()))
+                #
+                # shd_result = shd_reporter.shd_if_same_partition(
+                #     oracle_abs_dag=self.ml_teen_dag,
+                #     candidate_abs_dag=g
+                # )
+                shd_result = cr.calculate_shd(
+                    oracle_abs_dag=self.ml_teen_dag,
+                    candidate_abs_dag=g)
+
+                jaccard_result = cr.calculate_jaccard(oracle_abs_dag=self.ml_teen_dag, candidate_abs_dag=g)
+
+                ri_ari_result = cr.calculate_ri_ari(
+                    oracle_dag=self.ml_teen_dag,
+                    candidate_dag=g
+                )
+
+                print(f"\nCluster {i}")
+                print("SHD:", shd_result["shd"])
+                print("Jaccard:", jaccard_result["JS"])
+                print("RI:", ri_ari_result["RI"])
+                print("ARI:", ri_ari_result["ARI"])
+
         except Exception as e:
             # This will print the FULL error path to your console
             print("\n--- DEBUG ERROR ---")
@@ -495,7 +525,7 @@ class LauncherApp:
             # 2. Get the numerical versions
             order, adj = mapper.get_indexed_data()
             # order = [3, 1, 2, 4]
-            # adj = {1: [2], 3: [2], 2: [4]}
+            # adj = {1: [2], 3: [2], 2: [4]}transit
             # 3. Fit the model
             repare_model = repare_dag.PartitionDagModelOracle()
             abstracted_dag_numeric = repare_model.fit(order, adj)
@@ -516,19 +546,24 @@ class LauncherApp:
                 # print("Nodes:", list(g.nodes()))
                 # print("Edges:", list(g.edges()))
                 #
-                shd_result = shd_reporter.shd_if_same_partition(
+                # shd_result = shd_reporter.shd_if_same_partition(
+                #     oracle_abs_dag=self.ml_teen_dag,
+                #     candidate_abs_dag=g
+                # )
+                shd_result = cr.calculate_shd(
                     oracle_abs_dag=self.ml_teen_dag,
-                    candidate_abs_dag=g
-                )
+                    candidate_abs_dag=g)
 
-                ri_ari_result = ri_ari_reporter.ri_ari_report(
+                jaccard_result = cr.calculate_jaccard(oracle_abs_dag=self.ml_teen_dag,candidate_abs_dag=g)
+
+                ri_ari_result = cr.calculate_ri_ari(
                     oracle_dag=self.ml_teen_dag,
                     candidate_dag=g
                 )
 
                 print(f"\nCandidate {i}")
-                print("Same partition as oracle:", shd_result["same_partition"])
                 print("SHD:", shd_result["shd"])
+                print("Jaccard:", jaccard_result["JS"])
                 print("RI:", ri_ari_result["RI"])
                 print("ARI:", ri_ari_result["ARI"])
 
@@ -566,21 +601,31 @@ class LauncherApp:
             # print("Nodes:", list(g.nodes()))
             # print("Edges:", list(g.edges()))
             #
-            shd_result = shd_reporter.shd_if_same_partition(
+            # shd_result = shd_reporter.shd_if_same_partition(
+            #     oracle_abs_dag=oracle_abstracted_dag,
+            #     candidate_abs_dag=g
+            # )
+
+            shd_result = cr.calculate_shd(
                 oracle_abs_dag=oracle_abstracted_dag,
                 candidate_abs_dag=g
             )
 
-            ri_ari_result = ri_ari_reporter.ri_ari_report(
-                oracle_dag=oracle_abstracted_dag,
-                candidate_dag=g
-            )
+            jaccard_score = cr.calculate_jaccard(oracle_abstracted_dag, g)
+
+            # ri_ari_result = ri_ari_reporter.ri_ari_report(
+            #     oracle_dag=oracle_abstracted_dag,
+            #     candidate_dag=g
+            # )
+            ri_ari_result = cr.calculate_ri_ari(oracle_dag=oracle_abstracted_dag, candidate_dag=g)
 
             print(f"\nCandidate {i}")
-            print("Same partition as oracle:", shd_result["same_partition"])
             print("SHD:", shd_result["shd"])
+            print("Jaccard:", jaccard_score["JS"])
             print("RI:", ri_ari_result["RI"])
             print("ARI:", ri_ari_result["ARI"])
+
+
 
     def display_comparison(self, original_dag, abstracted_dag):
         # Create a figure with 1 row and 2 columns
