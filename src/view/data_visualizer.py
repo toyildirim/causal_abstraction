@@ -17,8 +17,10 @@ from abstraction_methods.transitcluster.transit_cluster import TransitCluster as
 from util.file_utils import FileUtil as fu
 from util.rda_converter import RdaConverter as rda
 from util.graph_utils import GraphUtils, GraphMapper
+from util.report import shd_reporter
 from util.report.dag_reporter import GraphReport
 import util.report.ri_reporter as ri_ari_reporter
+import util.report.shd_reporter
 
 # from abstraction_methods.repare import repare_known_dag_model as repare_dag
 from abstraction_methods.repare import repare as repare_dag
@@ -371,12 +373,24 @@ class LauncherApp:
                 messagebox.showwarning("Logic Error", "No DAG loaded! Please load a file first.")
                 return
             abstracted_dag = cg(self.current_dag, size(self.current_dag.nodes)/2, None, 0)
-            abstracted_dags = []
-            abstracted_dags.append(abstracted_dag)
+            abstracted_dag_teen = cg(self.current_dag, size(self.ml_teen_dag.nodes), None, 0)
+            abstracted_dag_child = cg(self.current_dag, size(self.ml_child_dag.nodes), None, 0)
+
+
             abstract_path = DATA_PATH + '/cagres/abstracted'
-            DataVisualizer.plot_data(abstracted_dag, abstract_path)
+            DataVisualizer.plot_data(abstracted_dag_teen, f"{abstract_path}_teen")
+            DataVisualizer.plot_data(abstracted_dag_child, f"{abstract_path}_child")
             # self.display_comparison(self.current_dag, abstracted_dag)
+            abstracted_dags = []
+            # abstracted_dags.append(abstracted_dag)
+            abstracted_dags.append(abstracted_dag_teen)
             self.report_dag(abstracted_dags,"cagres")
+            self.compare_dags(abstracted_dags, self.ml_teen_dag)
+            abstracted_dags.remove(abstracted_dag_teen)
+            abstracted_dags.append(abstracted_dag_child)
+            self.report_dag(abstracted_dags,"cagres")
+            self.compare_dags(abstracted_dags, self.ml_child_dag)
+
         except Exception as e:
             # This will print the FULL error path to your console
             print("\n--- DEBUG ERROR ---")
@@ -497,21 +511,27 @@ class LauncherApp:
             ]
             self.report_dag(coarsening_relabeled,"repare")
 
-
             for i, g in enumerate(coarsening_relabeled):
                 # print(f"\nCoarsening step {i}")
                 # print("Nodes:", list(g.nodes()))
                 # print("Edges:", list(g.edges()))
                 #
-                result = ri_ari_reporter.ri_ari_report(
-                    oracle_dag=self.ml_teen_dag,
-                    candidate_dag= g
+                shd_result = shd_reporter.shd_if_same_partition(
+                    oracle_abs_dag=self.ml_teen_dag,
+                    candidate_abs_dag=g
                 )
 
-                print("RI:", result["RI"])
-                print("ARI:", result["ARI"])
-                print("Oracle labels:", result["oracle_labels"])
-                print("Candidate labels:", result["candidate_labels"])
+                ri_ari_result = ri_ari_reporter.ri_ari_report(
+                    oracle_dag=self.ml_teen_dag,
+                    candidate_dag=g
+                )
+
+                print(f"\nCandidate {i}")
+                print("Same partition as oracle:", shd_result["same_partition"])
+                print("SHD:", shd_result["shd"])
+                print("RI:", ri_ari_result["RI"])
+                print("ARI:", ri_ari_result["ARI"])
+
                 # DataVisualizer.plot_data(g, f"{abstract_path}_{i}")
 
         except Exception as e:
@@ -539,6 +559,28 @@ class LauncherApp:
         df_nodes = reporter.node_size_report()
         print(df_nodes)
         df_nodes.to_html(f"{abstraction_method}_df_nodes.html")
+
+    def compare_dags (self, dags, oracle_abstracted_dag):
+        for i, g in enumerate(dags):
+            # print(f"\nCoarsening step {i}")
+            # print("Nodes:", list(g.nodes()))
+            # print("Edges:", list(g.edges()))
+            #
+            shd_result = shd_reporter.shd_if_same_partition(
+                oracle_abs_dag=oracle_abstracted_dag,
+                candidate_abs_dag=g
+            )
+
+            ri_ari_result = ri_ari_reporter.ri_ari_report(
+                oracle_dag=oracle_abstracted_dag,
+                candidate_dag=g
+            )
+
+            print(f"\nCandidate {i}")
+            print("Same partition as oracle:", shd_result["same_partition"])
+            print("SHD:", shd_result["shd"])
+            print("RI:", ri_ari_result["RI"])
+            print("ARI:", ri_ari_result["ARI"])
 
     def display_comparison(self, original_dag, abstracted_dag):
         # Create a figure with 1 row and 2 columns
