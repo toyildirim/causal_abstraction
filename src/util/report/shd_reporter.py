@@ -18,7 +18,7 @@ def block_to_key(block):
     return tuple(sorted(block, key=str))
 
 
-def normalize_graph_nodes_for_shd(G, sep="_"):
+def normalize_graph_nodes(G, sep="_"):
     mapping = {
         node: block_to_key(node_to_block(node, sep=sep))
         for node in G.nodes()
@@ -26,24 +26,43 @@ def normalize_graph_nodes_for_shd(G, sep="_"):
     return nx.relabel_nodes(G, mapping, copy=True)
 
 
-def shd_with_normalized_nodes(
-    oracle_abs_dag,
-    candidate_abs_dag,
-    sep="_",
-    double_for_anticausal=True
-):
-    oracle_norm = normalize_graph_nodes_for_shd(oracle_abs_dag, sep=sep)
-    candidate_norm = normalize_graph_nodes_for_shd(candidate_abs_dag, sep=sep)
+def partition_signature(G, sep="_"):
+    """
+    Returns an order-independent representation of the graph's partition.
+    """
+    return frozenset(
+        frozenset(node_to_block(node, sep=sep))
+        for node in G.nodes()
+    )
 
-    if set(oracle_norm.nodes()) != set(candidate_norm.nodes()):
-        raise ValueError(
-            "SHD cannot be computed directly because the normalized abstract node sets differ.\n"
-            f"Only in oracle: {set(oracle_norm.nodes()) - set(candidate_norm.nodes())}\n"
-            f"Only in candidate: {set(candidate_norm.nodes()) - set(oracle_norm.nodes())}"
-        )
 
-    return structure_hamming_dist(
+def same_partition(G1, G2, sep="_"):
+    return partition_signature(G1, sep=sep) == partition_signature(G2, sep=sep)
+
+
+def shd_if_same_partition(oracle_abs_dag, candidate_abs_dag, sep="_", double_for_anticausal=True):
+    """
+    Computes SHD only when the two abstract DAGs have the same clusters.
+    Otherwise returns None.
+    """
+    if not same_partition(oracle_abs_dag, candidate_abs_dag, sep=sep):
+        return {
+            "same_partition": False,
+            "shd": None,
+            "message": "SHD skipped because abstract partitions differ."
+        }
+
+    oracle_norm = normalize_graph_nodes(oracle_abs_dag, sep=sep)
+    candidate_norm = normalize_graph_nodes(candidate_abs_dag, sep=sep)
+
+    shd = structure_hamming_dist(
         true_graph=oracle_norm,
         pred_graph=candidate_norm,
         double_for_anticausal=double_for_anticausal
     )
+
+    return {
+        "same_partition": True,
+        "shd": shd,
+        "message": "SHD computed because abstract partitions match."
+    }
