@@ -107,6 +107,7 @@ class GraphReport:
             is_dag = None
 
         return {
+
             "nodes": n_nodes,
             "edges": n_edges,
             "density": density,
@@ -146,7 +147,7 @@ class GraphReport:
         Prints the report as a readable table.
         """
         df = self.report()
-        print(df.to_string(index=False))
+        # print(df.to_string(index=False))
 
     def node_size_report(self):
         """
